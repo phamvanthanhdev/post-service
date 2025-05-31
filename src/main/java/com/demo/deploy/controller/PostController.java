@@ -55,4 +55,34 @@ public class PostController {
         }
         return "redirect:/posts";
     }
+
+    @GetMapping("/posts/{id}/edit")
+    public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            Post post = postService.getPostById(id);
+            if (post == null) {
+                redirectAttributes.addFlashAttribute("error", "Không tìm thấy bài viết!");
+                return "redirect:/posts";
+            }
+            model.addAttribute("post", post);
+            return "edit-post";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi tải bài viết!");
+            return "redirect:/posts";
+        }
+    }
+
+    @PostMapping("/posts/{id}")
+    public String updatePost(@PathVariable Long id, @ModelAttribute Post post, RedirectAttributes redirectAttributes) {
+        try {
+            post.setId(id);
+            postService.updatePost(post);
+            redirectAttributes.addFlashAttribute("success", "Bài viết đã được cập nhật thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi cập nhật bài viết!");
+        }
+        return "redirect:/posts";
+    }
+
+
 }
