@@ -5,18 +5,18 @@
 <mapper namespace="com.demo.deploy.mapper.PostMapper">
 
     <insert id="insertPost" parameterType="Post">
-        INSERT INTO posts (title, content)
-        VALUES (#{title}, #{content})
+        INSERT INTO posts (title, content, created_by)
+        VALUES (#{title}, #{content}, #{createdBy})
     </insert>
 
     <select id="selectAllPosts" resultType="Post">
-        SELECT id, title, content, created_at, updated_at
+        SELECT id, title, content, created_at, updated_at, created_by
         FROM posts
         ORDER BY created_at DESC
     </select>
 
     <select id="selectPostById" parameterType="long" resultType="Post">
-        SELECT id, title, content, created_at, updated_at
+        SELECT id, title, content, created_at, updated_at, created_by
         FROM posts
         WHERE id = #{id}
     </select>
@@ -25,10 +25,27 @@
         UPDATE posts
         SET title = #{title}, content = #{content}
         WHERE id = #{id}
+            AND created_by = #{createdBy}
     </update>
 
-    <delete id="deletePost" parameterType="long">
-        DELETE FROM posts WHERE id = #{id}
+    <delete id="deletePost" parameterType="java.util.Map">
+        DELETE FROM posts
+        WHERE id = #{id}
+        <if test="username != null">
+            AND created_by = #{username}
+        </if>
     </delete>
 
+    <select id="selectAllPostsUser" resultType="Post">
+        SELECT id, title, content, created_at, updated_at
+        FROM posts
+        WHERE created_by = #{username}
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updatePostAdmin" parameterType="Post">
+        UPDATE posts
+        SET title = #{title}, content = #{content}
+        WHERE id = #{id}
+    </update>
 </mapper>

@@ -1,6 +1,7 @@
 package com.demo.deploy.controller;
 
 import com.demo.deploy.model.Post;
+import com.demo.deploy.service.AuthService;
 import com.demo.deploy.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 public class PostController {
@@ -16,15 +18,22 @@ public class PostController {
     @Autowired
     private PostService postService;
 
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/posts";
-    }
+    @Autowired
+    private AuthService authService;
 
     @GetMapping("/posts")
     public String listPosts(Model model) {
         List<Post> posts = postService.getAllPosts();
         model.addAttribute("posts", posts);
+        model.addAttribute("username", authService.getUserLogin());
+        return "post-list";
+    }
+
+    @GetMapping("/my-posts")
+    public String listMyPosts(Model model) {
+        List<Post> posts = postService.getAllPostsUser();
+        model.addAttribute("posts", posts);
+        model.addAttribute("username", authService.getUserLogin());
         return "post-list";
     }
 
@@ -48,9 +57,14 @@ public class PostController {
     @GetMapping("/posts/{id}/delete")
     public String deletePost(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            postService.deletePost(id);
+            int result = postService.deletePost(id);
+            if (result <= 0) {
+                redirectAttributes.addFlashAttribute("error", "Không thể xóa bài viết!");
+                return "redirect:/posts";
+            }
             redirectAttributes.addFlashAttribute("success", "Bài viết đã được xóa thành công!");
         } catch (Exception e) {
+            System.out.println("Error deleting post: " + e.getMessage());
             redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi xóa bài viết!");
         }
         return "redirect:/posts";
@@ -60,8 +74,12 @@ public class PostController {
     public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Post post = postService.getPostById(id);
-            if (post == null) {
+            if (Objects.isNull(post)) {
                 redirectAttributes.addFlashAttribute("error", "Không tìm thấy bài viết!");
+                return "redirect:/posts";
+            }
+            if (!authService.getUserLogin().equals(post.getCreatedBy())) {
+                redirectAttributes.addFlashAttribute("error", "Không thể chỉnh sửa bài viết!");
                 return "redirect:/posts";
             }
             model.addAttribute("post", post);
@@ -76,7 +94,11 @@ public class PostController {
     public String updatePost(@PathVariable Long id, @ModelAttribute Post post, RedirectAttributes redirectAttributes) {
         try {
             post.setId(id);
-            postService.updatePost(post);
+            int result = postService.updatePost(post);
+            if (result <= 0) {
+                redirectAttributes.addFlashAttribute("error", "Không thể chỉnh sửa bài viết!");
+                return "redirect:/posts";
+            }
             redirectAttributes.addFlashAttribute("success", "Bài viết đã được cập nhật thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi cập nhật bài viết!");
